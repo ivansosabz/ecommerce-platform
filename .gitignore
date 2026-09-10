@@ -47,6 +47,8 @@ playwright-report/
 *.swp
 *.swo
 *~
+.cursor
+.gitignore
 
 # Operating systems
 .DS_Store
