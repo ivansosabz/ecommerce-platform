@@ -49,4 +49,6 @@ Frontend y backend inicializados. La base de datos, el ORM y las funcionalidades
 
 ## Documentación
 
-El contexto actual del repositorio se mantiene en [`docs/contexto`](docs/contexto/arquitectura.md).
+- [Documentación académica del proyecto](docs/documentacion-proyecto.md)
+- [Modelo inicial de base de datos](docs/database/ecommerce.dbml)
+- [Contexto técnico del repositorio](docs/contexto/arquitectura.md)
