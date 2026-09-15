@@ -1,0 +1,387 @@
+Project plataforma_comercio_electronico {
+  database_type: 'PostgreSQL'
+  Note: 'Modelo conceptual normalizado de la plataforma. La facturación está diseñada como módulo futuro y no tiene validez tributaria.'
+}
+
+Enum estado_pedido {
+  pendiente
+  confirmado
+  en_preparacion
+  enviado
+  entregado
+  cancelado
+}
+
+Enum estado_factura {
+  borrador
+  emitida
+  anulada
+}
+
+Table roles {
+  id uuid [pk, not null, default: `gen_random_uuid()`]
+  codigo varchar(50) [not null, unique]
+  nombre varchar(80) [not null, unique]
+  descripcion text
+  esta_activo boolean [not null, default: true]
+  creado_en timestamptz [not null, default: `now()`]
+  actualizado_en timestamptz [not null, default: `now()`]
+
+  Note: 'Catálogo de roles. Los valores iniciales previstos son usuario y administrador.'
+}
+
+Table usuarios {
+  id uuid [pk, not null, default: `gen_random_uuid()`]
+  rol_id uuid [not null]
+  correo_electronico varchar(320) [not null, unique]
+  nombre_completo varchar(150) [not null]
+  hash_contrasena varchar(255)
+  esta_activo boolean [not null, default: true]
+  creado_en timestamptz [not null, default: `now()`]
+  actualizado_en timestamptz [not null, default: `now()`]
+
+  indexes {
+    rol_id [name: 'ix_usuarios_rol_id']
+  }
+
+  Note: 'Un hash de contraseña nulo identifica una cuenta creada únicamente mediante OAuth.'
+}
+
+Table cuentas_oauth {
+  id uuid [pk, not null, default: `gen_random_uuid()`]
+  usuario_id uuid [not null]
+  proveedor varchar(50) [not null]
+  identificador_proveedor varchar(255) [not null]
+  creado_en timestamptz [not null, default: `now()`]
+
+  indexes {
+    (proveedor, identificador_proveedor) [unique, name: 'uq_cuentas_oauth_proveedor_identificador']
+    (usuario_id, proveedor) [unique, name: 'uq_cuentas_oauth_usuario_proveedor']
+  }
+}
+
+Table categorias {
+  id uuid [pk, not null, default: `gen_random_uuid()`]
+  categoria_padre_id uuid
+  nombre varchar(120) [not null]
+  slug varchar(140) [not null, unique]
+  esta_activo boolean [not null, default: true]
+  creado_en timestamptz [not null, default: `now()`]
+  actualizado_en timestamptz [not null, default: `now()`]
+
+  Note: 'La aplicación limita inicialmente la jerarquía a categoría y subcategoría.'
+}
+
+Table marcas {
+  id uuid [pk, not null, default: `gen_random_uuid()`]
+  nombre varchar(120) [not null, unique]
+  slug varchar(140) [not null, unique]
+  esta_activo boolean [not null, default: true]
+  creado_en timestamptz [not null, default: `now()`]
+  actualizado_en timestamptz [not null, default: `now()`]
+}
+
+Table productos {
+  id uuid [pk, not null, default: `gen_random_uuid()`]
+  categoria_id uuid [not null]
+  marca_id uuid [not null]
+  nombre varchar(200) [not null]
+  slug varchar(220) [not null, unique]
+  descripcion text
+  precio numeric(14,2) [not null]
+  existencias integer [not null, default: 0]
+  esta_activo boolean [not null, default: true]
+  creado_en timestamptz [not null, default: `now()`]
+  actualizado_en timestamptz [not null, default: `now()`]
+
+  indexes {
+    categoria_id [name: 'ix_productos_categoria_id']
+    marca_id [name: 'ix_productos_marca_id']
+    nombre [name: 'ix_productos_nombre']
+    precio [name: 'ix_productos_precio']
+  }
+
+  checks {
+    `precio >= 0` [name: 'ck_productos_precio_no_negativo']
+    `existencias >= 0` [name: 'ck_productos_existencias_no_negativas']
+  }
+}
+
+Table imagenes_producto {
+  id uuid [pk, not null, default: `gen_random_uuid()`]
+  producto_id uuid [not null]
+  url varchar(2048) [not null]
+  texto_alternativo varchar(255)
+  orden smallint [not null, default: 0]
+  creado_en timestamptz [not null, default: `now()`]
+
+  indexes {
+    (producto_id, orden) [unique, name: 'uq_imagenes_producto_orden']
+  }
+
+  checks {
+    `orden >= 0` [name: 'ck_imagenes_producto_orden_no_negativo']
+  }
+}
+
+Table definiciones_especificacion {
+  id uuid [pk, not null, default: `gen_random_uuid()`]
+  nombre varchar(120) [not null]
+  slug varchar(140) [not null, unique]
+  unidad varchar(40)
+  creado_en timestamptz [not null, default: `now()`]
+  actualizado_en timestamptz [not null, default: `now()`]
+}
+
+Table especificaciones_producto {
+  id uuid [pk, not null, default: `gen_random_uuid()`]
+  producto_id uuid [not null]
+  definicion_especificacion_id uuid [not null]
+  valor varchar(255) [not null]
+  creado_en timestamptz [not null, default: `now()`]
+  actualizado_en timestamptz [not null, default: `now()`]
+
+  indexes {
+    (producto_id, definicion_especificacion_id) [unique, name: 'uq_especificaciones_producto']
+  }
+}
+
+Table favoritos {
+  id uuid [pk, not null, default: `gen_random_uuid()`]
+  usuario_id uuid [not null]
+  producto_id uuid [not null]
+  creado_en timestamptz [not null, default: `now()`]
+
+  indexes {
+    (usuario_id, producto_id) [unique, name: 'uq_favoritos_usuario_producto']
+  }
+}
+
+Table carritos {
+  id uuid [pk, not null, default: `gen_random_uuid()`]
+  usuario_id uuid [not null, unique]
+  creado_en timestamptz [not null, default: `now()`]
+  actualizado_en timestamptz [not null, default: `now()`]
+
+  Note: 'Existe un carrito persistente por usuario autenticado.'
+}
+
+Table detalles_carrito {
+  id uuid [pk, not null, default: `gen_random_uuid()`]
+  carrito_id uuid [not null]
+  producto_id uuid [not null]
+  cantidad integer [not null, default: 1]
+  creado_en timestamptz [not null, default: `now()`]
+  actualizado_en timestamptz [not null, default: `now()`]
+
+  indexes {
+    (carrito_id, producto_id) [unique, name: 'uq_detalles_carrito_producto']
+  }
+
+  checks {
+    `cantidad > 0` [name: 'ck_detalles_carrito_cantidad_positiva']
+  }
+
+  Note: 'Los importes se calculan usando el precio actual del producto.'
+}
+
+Table metodos_pago {
+  id uuid [pk, not null, default: `gen_random_uuid()`]
+  codigo varchar(50) [not null, unique]
+  nombre varchar(100) [not null, unique]
+  descripcion text
+  esta_activo boolean [not null, default: true]
+  creado_en timestamptz [not null, default: `now()`]
+  actualizado_en timestamptz [not null, default: `now()`]
+
+  Note: 'Catálogo preparado para el proceso de compra. El valor inicial previsto representa un pago simulado.'
+}
+
+Table pedidos {
+  id uuid [pk, not null, default: `gen_random_uuid()`]
+  usuario_id uuid [not null]
+  metodo_pago_id uuid [not null]
+  estado estado_pedido [not null, default: 'pendiente']
+  moneda char(3) [not null]
+  subtotal numeric(14,2) [not null]
+  importe_envio numeric(14,2) [not null, default: 0]
+  total numeric(14,2) [not null]
+  destinatario_envio varchar(150) [not null]
+  telefono_envio varchar(40) [not null]
+  direccion_envio_linea_1 varchar(255) [not null]
+  direccion_envio_linea_2 varchar(255)
+  ciudad_envio varchar(120) [not null]
+  region_envio varchar(120) [not null]
+  codigo_postal_envio varchar(20)
+  codigo_pais_envio char(2) [not null]
+  creado_en timestamptz [not null, default: `now()`]
+  actualizado_en timestamptz [not null, default: `now()`]
+
+  indexes {
+    usuario_id [name: 'ix_pedidos_usuario_id']
+    metodo_pago_id [name: 'ix_pedidos_metodo_pago_id']
+    estado [name: 'ix_pedidos_estado']
+    creado_en [name: 'ix_pedidos_creado_en']
+  }
+
+  checks {
+    `subtotal >= 0` [name: 'ck_pedidos_subtotal_no_negativo']
+    `importe_envio >= 0` [name: 'ck_pedidos_importe_envio_no_negativo']
+    `total >= 0` [name: 'ck_pedidos_total_no_negativo']
+    `total = subtotal + importe_envio` [name: 'ck_pedidos_total_consistente']
+  }
+
+  Note: 'Los campos de envío conservan una copia histórica de la entrega.'
+}
+
+Table detalles_pedido {
+  id uuid [pk, not null, default: `gen_random_uuid()`]
+  pedido_id uuid [not null]
+  producto_id uuid
+  nombre_producto varchar(200) [not null]
+  precio_unitario numeric(14,2) [not null]
+  cantidad integer [not null]
+  subtotal numeric(14,2) [not null]
+  creado_en timestamptz [not null, default: `now()`]
+
+  indexes {
+    pedido_id [name: 'ix_detalles_pedido_pedido_id']
+    producto_id [name: 'ix_detalles_pedido_producto_id']
+  }
+
+  checks {
+    `precio_unitario >= 0` [name: 'ck_detalles_pedido_precio_no_negativo']
+    `cantidad > 0` [name: 'ck_detalles_pedido_cantidad_positiva']
+    `subtotal = precio_unitario * cantidad` [name: 'ck_detalles_pedido_subtotal_consistente']
+  }
+
+  Note: 'Nombre, precio y subtotal son copias históricas que no dependen del producto actual.'
+}
+
+Table facturas {
+  id uuid [pk, not null, default: `gen_random_uuid()`]
+  pedido_id uuid [not null, unique]
+  estado estado_factura [not null, default: 'borrador']
+  cdc varchar(44) [unique]
+  establecimiento char(3) [not null]
+  punto_expedicion char(3) [not null]
+  numero_documento char(7) [not null]
+  fecha_emision timestamptz
+  ruc_emisor varchar(20) [not null]
+  digito_verificador_emisor char(1) [not null]
+  razon_social_emisor varchar(200) [not null]
+  direccion_emisor varchar(255) [not null]
+  nombre_comprador varchar(200) [not null]
+  tipo_documento_comprador varchar(30) [not null]
+  numero_documento_comprador varchar(30) [not null]
+  direccion_comprador varchar(255) [not null]
+  moneda char(3) [not null]
+  subtotal_exento numeric(14,2) [not null, default: 0]
+  subtotal_gravado_5 numeric(14,2) [not null, default: 0]
+  subtotal_gravado_10 numeric(14,2) [not null, default: 0]
+  iva_5 numeric(14,2) [not null, default: 0]
+  iva_10 numeric(14,2) [not null, default: 0]
+  iva_total numeric(14,2) [not null, default: 0]
+  total numeric(14,2) [not null]
+  creado_en timestamptz [not null, default: `now()`]
+  actualizado_en timestamptz [not null, default: `now()`]
+
+  indexes {
+    (establecimiento, punto_expedicion, numero_documento) [unique, name: 'uq_facturas_numeracion']
+    estado [name: 'ix_facturas_estado']
+    fecha_emision [name: 'ix_facturas_fecha_emision']
+  }
+
+  checks {
+    `cdc IS NULL OR cdc ~ '^[0-9]{44}$'` [name: 'ck_facturas_cdc_formato']
+    `subtotal_exento >= 0` [name: 'ck_facturas_exento_no_negativo']
+    `subtotal_gravado_5 >= 0` [name: 'ck_facturas_gravado_5_no_negativo']
+    `subtotal_gravado_10 >= 0` [name: 'ck_facturas_gravado_10_no_negativo']
+    `iva_5 >= 0` [name: 'ck_facturas_iva_5_no_negativo']
+    `iva_10 >= 0` [name: 'ck_facturas_iva_10_no_negativo']
+    `iva_total = iva_5 + iva_10` [name: 'ck_facturas_iva_total_consistente']
+    `total = subtotal_exento + subtotal_gravado_5 + subtotal_gravado_10 + iva_total` [name: 'ck_facturas_total_consistente']
+  }
+
+  Note: 'Módulo futuro. Factura electrónica simulada inspirada en SIFEN, sin conexión con la DNIT ni validez tributaria. Los datos del emisor y comprador son copias históricas.'
+}
+
+Table detalles_factura {
+  id uuid [pk, not null, default: `gen_random_uuid()`]
+  factura_id uuid [not null]
+  descripcion varchar(255) [not null]
+  cantidad integer [not null]
+  precio_unitario numeric(14,2) [not null]
+  subtotal numeric(14,2) [not null]
+  porcentaje_iva numeric(5,2) [not null]
+  importe_iva numeric(14,2) [not null]
+  total numeric(14,2) [not null]
+  creado_en timestamptz [not null, default: `now()`]
+
+  indexes {
+    factura_id [name: 'ix_detalles_factura_factura_id']
+  }
+
+  checks {
+    `cantidad > 0` [name: 'ck_detalles_factura_cantidad_positiva']
+    `precio_unitario >= 0` [name: 'ck_detalles_factura_precio_no_negativo']
+    `subtotal = precio_unitario * cantidad` [name: 'ck_detalles_factura_subtotal_consistente']
+    `porcentaje_iva IN (0, 5, 10)` [name: 'ck_detalles_factura_porcentaje_iva']
+    `importe_iva >= 0` [name: 'ck_detalles_factura_iva_no_negativo']
+    `total = subtotal + importe_iva` [name: 'ck_detalles_factura_total_consistente']
+  }
+
+  Note: 'Copia histórica independiente de cada concepto facturado. Su implementación se realizará en una fase posterior.'
+}
+
+Ref fk_usuarios_rol: usuarios.rol_id > roles.id [delete: restrict]
+Ref fk_cuentas_oauth_usuario: cuentas_oauth.usuario_id > usuarios.id [delete: cascade]
+Ref fk_categorias_padre: categorias.categoria_padre_id > categorias.id [delete: restrict]
+Ref fk_productos_categoria: productos.categoria_id > categorias.id [delete: restrict]
+Ref fk_productos_marca: productos.marca_id > marcas.id [delete: restrict]
+Ref fk_imagenes_producto_producto: imagenes_producto.producto_id > productos.id [delete: cascade]
+Ref fk_especificaciones_producto_producto: especificaciones_producto.producto_id > productos.id [delete: cascade]
+Ref fk_especificaciones_producto_definicion: especificaciones_producto.definicion_especificacion_id > definiciones_especificacion.id [delete: restrict]
+Ref fk_favoritos_usuario: favoritos.usuario_id > usuarios.id [delete: cascade]
+Ref fk_favoritos_producto: favoritos.producto_id > productos.id [delete: cascade]
+Ref fk_carritos_usuario: usuarios.id - carritos.usuario_id [delete: cascade]
+Ref fk_detalles_carrito_carrito: detalles_carrito.carrito_id > carritos.id [delete: cascade]
+Ref fk_detalles_carrito_producto: detalles_carrito.producto_id > productos.id [delete: cascade]
+Ref fk_pedidos_usuario: pedidos.usuario_id > usuarios.id [delete: restrict]
+Ref fk_pedidos_metodo_pago: pedidos.metodo_pago_id > metodos_pago.id [delete: restrict]
+Ref fk_detalles_pedido_pedido: detalles_pedido.pedido_id > pedidos.id [delete: cascade]
+Ref fk_detalles_pedido_producto: detalles_pedido.producto_id > productos.id [delete: set null]
+Ref fk_facturas_pedido: pedidos.id - facturas.pedido_id [delete: restrict]
+Ref fk_detalles_factura_factura: detalles_factura.factura_id > facturas.id [delete: cascade]
+
+TableGroup identidad_y_acceso {
+  roles
+  usuarios
+  cuentas_oauth
+}
+
+TableGroup catalogo {
+  categorias
+  marcas
+  productos
+  imagenes_producto
+  definiciones_especificacion
+  especificaciones_producto
+}
+
+TableGroup funciones_usuario {
+  favoritos
+  carritos
+  detalles_carrito
+}
+
+TableGroup ventas {
+  metodos_pago
+  pedidos
+  detalles_pedido
+}
+
+TableGroup facturacion_futura {
+  facturas
+  detalles_factura
+}
