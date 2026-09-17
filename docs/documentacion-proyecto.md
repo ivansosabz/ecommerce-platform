@@ -31,18 +31,20 @@ El proyecto surge de la necesidad de aplicar de manera integrada los conocimient
 
 ### 3.1. Objetivo general
 
-Diseñar e implementar una plataforma web de comercio electrónico para productos tecnológicos, aplicando una arquitectura modular, buenas prácticas de desarrollo, seguridad, persistencia de datos, testing y documentación.
+Desarrollar, durante el curso, una plataforma web de comercio electrónico para productos tecnológicos que permita consultar productos, gestionar usuarios y realizar compras simuladas, aplicando una arquitectura por capas, persistencia relacional, pruebas automatizadas y documentación verificable.
 
 ### 3.2. Objetivos específicos
 
-1. Diseñar una API REST versionada para administrar productos, categorías, marcas, usuarios, favoritos, carrito y pedidos.
-2. Desarrollar una interfaz web interactiva y responsiva con React, TypeScript y Vite.
-3. Modelar una base de datos relacional en PostgreSQL e implementarla con SQLAlchemy y Alembic.
-4. Implementar registro y autenticación mediante email y contraseña, además de acceso con Google mediante OAuth 2.0 y OpenID Connect.
-5. Aplicar autorización basada en roles para separar las operaciones de usuarios y administradores.
-6. Incorporar pruebas automatizadas para los flujos críticos de autenticación, catálogo, carrito, pedidos y permisos.
-7. Preparar el proyecto para ejecución y despliegue mediante variables de entorno, Docker e integración continua.
-8. Mantener documentación académica y técnica que permita comprender la arquitectura y la evolución del proyecto.
+1. **OE1. Implementar** una API REST versionada para catálogo, usuarios, favoritos, carrito y pedidos, organizada en rutas, servicios y repositorios, y verificar al menos una operación principal de cada módulo antes del cierre del curso.
+2. **OE2. Desarrollar** una interfaz responsiva con vistas de catálogo, autenticación, carrito, checkout y pedidos, y verificar el flujo de compra simulado en tamaños móvil y escritorio antes de la demostración final.
+3. **OE3. Implementar** las 15 tablas del MVP aprobado en PostgreSQL con SQLAlchemy y Alembic, conservando sus restricciones y relaciones, y verificar la creación y reversión de la migración inicial durante la etapa de datos.
+4. **OE4. Implementar** registro y acceso con email y contraseña, así como acceso con Google mediante OAuth 2.0 y OpenID Connect, y verificar los escenarios de acceso exitoso y rechazo de credenciales inválidas durante la etapa de autenticación.
+5. **OE5. Aplicar** los roles usuario y administrador, y verificar que un usuario común no pueda ejecutar las operaciones administrativas del catálogo y los pedidos antes de finalizar el MVP.
+6. **OE6. Incorporar** pruebas automatizadas de integridad de datos, autenticación, catálogo, carrito, pedidos y permisos, incluyendo al menos un escenario exitoso y uno de error por flujo crítico implementado, y ejecutarlas antes de publicar los cambios correspondientes.
+7. **OE7. Preparar** la configuración por entorno, la ejecución mediante Docker, una comprobación automatizada en CI y un despliegue demostrable del MVP antes de la entrega final.
+8. **OE8. Mantener** la documentación académica y técnica actualizada semanalmente, registrando cada actividad relevante con responsable, área, estado y enlace al commit disponible, y relacionar los ocho objetivos específicos con actividades de la bitácora.
+
+Los plazos se relacionan con las etapas del cronograma tentativo de 16 semanas; las fechas oficiales se ajustarán al calendario del curso cuando esté disponible. Los objetivos describen entregables previstos y no implican que las funcionalidades estén terminadas.
 
 ## 4. Justificación y Análisis de Viabilidad
 
@@ -107,13 +109,14 @@ El modelo conceptual incluye una factura electrónica paraguaya simulada con cab
 
 ## 6. Áreas de Trabajo y Arquitectura General
 
-La solución seguirá una arquitectura cliente-servidor dentro de un monorepositorio. El frontend React consumirá una API REST construida con FastAPI. El backend concentrará la autenticación, autorización y reglas de negocio, y accederá a PostgreSQL mediante SQLAlchemy. Alembic administrará los cambios del esquema. Los secretos se proporcionarán mediante variables de entorno y no se almacenarán en Git.
+La solución sigue una arquitectura cliente-servidor dentro de un monorepositorio. El frontend React consumirá una API REST construida con FastAPI. El backend se organiza en capas de rutas HTTP, servicios de negocio y repositorios de datos. Los servicios definirán reglas y transacciones; los repositorios ejecutarán consultas mediante SQLAlchemy sin confirmar transacciones. Los contratos Pydantic estarán separados de los modelos ORM. Alembic administra los cambios del esquema. Los secretos se proporcionan mediante variables de entorno y no se almacenan en Git.
 
 ```text
 Usuario
   -> Frontend React
-  -> API REST FastAPI
-  -> SQLAlchemy
+  -> Rutas HTTP FastAPI
+  -> Servicios de negocio
+  -> Repositorios y modelos SQLAlchemy
   -> PostgreSQL
 ```
 
@@ -174,14 +177,21 @@ cd backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements-dev.txt
-fastapi dev app/main.py
+Copy-Item .env.example .env
+# Ajustar DATABASE_URL y crear previamente una base PostgreSQL.
+python -m alembic upgrade head
+python -m uvicorn app.main:app --loop app.core.event_loop:create_event_loop --reload
 ```
 
 Pruebas:
 
 ```powershell
 python -m pytest
+python -m ruff check app tests migrations
+python -m ruff format --check app tests migrations
 ```
+
+Se requiere Python 3.12 o posterior. Las pruebas de integración se habilitan con `TEST_DATABASE_URL`, apuntando a una base exclusiva de pruebas previamente migrada. Sin esa variable se omiten; las pruebas de salud y del contrato ORM no requieren una conexión.
 
 ### Ramas y commits
 
@@ -192,14 +202,30 @@ python -m pytest
 
 ## 8. Bitácora de Avances por Clase
 
-| Clase o fecha | Actividad realizada | Área | Responsable | Commit o enlace | Estado |
-| --- | --- | --- | --- | --- | --- |
-| 10/09/2026 | Creación de la estructura inicial del repositorio | Configuración | Jesús Iván Sosa Báez | `751d76d` | Completo |
-| 10/09/2026 | Inicialización del frontend con React, TypeScript y Vite | Frontend | Jesús Iván Sosa Báez | `a4e7acc` | Completo |
-| 10/09/2026 | Inicialización del backend con FastAPI y endpoint de salud | Backend | Jesús Iván Sosa Báez | `12576c4` | Completo |
-| 10/09/2026 | Creación de los documentos de contexto | Documentación | Jesús Iván Sosa Báez | `dbdd949` | Completo |
-| 10/09/2026 | Actualización de exclusiones del repositorio | Configuración | Jesús Iván Sosa Báez | `7c46e79` | Completo |
-| 15/09/2026 | Conversión de la documentación oficial y diseño inicial de la base de datos | Documentación y datos | Jesús Iván Sosa Báez | [PENDIENTE: completar después del commit] | En curso |
+| Clase o fecha | Actividad realizada | Área | Responsable | Commit o enlace | Estado | Objetivo relacionado |
+| --- | --- | --- | --- | --- | --- | --- |
+| 10/09/2026 | Creación de la estructura inicial del repositorio | Configuración | Jesús Iván Sosa Báez | [751d76d](https://github.com/ivansosabz/ecommerce-platform/commit/751d76dab5d52c6cc4a7b78a35136fecf761c573) | Completo | OE7, OE8 |
+| 10/09/2026 | Inicialización del frontend con React, TypeScript y Vite | Frontend | Jesús Iván Sosa Báez | [a4e7acc](https://github.com/ivansosabz/ecommerce-platform/commit/a4e7acc32468118bdacb27280b71a962da3c51ce) | Completo | OE2 |
+| 10/09/2026 | Inicialización del backend con FastAPI y endpoint de salud | Backend | Jesús Iván Sosa Báez | [12576c4](https://github.com/ivansosabz/ecommerce-platform/commit/12576c4e5441a356c9eac9ce25b6137c207fd8e2) | Completo | OE1 |
+| 10/09/2026 | Creación de los documentos de contexto | Documentación | Jesús Iván Sosa Báez | [dbdd949](https://github.com/ivansosabz/ecommerce-platform/commit/dbdd949fe2fdd8481b5676a66c007bc9e26b8be8) | Completo | OE8 |
+| 10/09/2026 | Actualización de exclusiones del repositorio | Configuración | Jesús Iván Sosa Báez | [7c46e79](https://github.com/ivansosabz/ecommerce-platform/commit/7c46e793a9b8a6cca5a3e601eb895d38ba675d6b) | Completo | OE7 |
+| 15/09/2026 | Refinamiento del modelo relacional de 17 tablas con restricciones, relaciones y copias históricas | Datos | Jesús Iván Sosa Báez | [81cbd30](https://github.com/ivansosabz/ecommerce-platform/commit/81cbd30fef41e8af7bbe67cbdd28981a657512dd) | Completo | OE3 |
+| 15/09/2026 | Revisión del alcance del MVP y actualización de la documentación académica | Documentación | Jesús Iván Sosa Báez | [448a705](https://github.com/ivansosabz/ecommerce-platform/commit/448a705018dc51c1155dc4e7c107bdfe330e0c92) | Completo | OE8 |
+| 15/09/2026 | Actualización del README y exclusión de fuentes locales de documentación | Configuración y documentación | Jesús Iván Sosa Báez | [2984f5e](https://github.com/ivansosabz/ecommerce-platform/commit/2984f5e66c5f50aa6362e7cccf072d4cc28d2f33) | Completo | OE7, OE8 |
+| 17/09/2026 | Implementación de los modelos SQLAlchemy correspondientes a las 15 tablas aprobadas del MVP | Datos y backend | Jesús Iván Sosa Báez | [3be5f78](https://github.com/ivansosabz/ecommerce-platform/commit/3be5f78f81d461031f398e2ff7b0d10f70887e9a) | Completo | OE3 |
+| 17/09/2026 | Creación de la migración inicial Alembic y verificación de su creación, reversión y recreación en PostgreSQL 17 temporal | Datos y calidad | Jesús Iván Sosa Báez | [3be5f78](https://github.com/ivansosabz/ecommerce-platform/commit/3be5f78f81d461031f398e2ff7b0d10f70887e9a) | Completo | OE3, OE6 |
+| 17/09/2026 | Organización del backend por capas, extracción del router de salud y preparación de paquetes de servicios, repositorios y contratos | Backend | Jesús Iván Sosa Báez | [3be5f78](https://github.com/ivansosabz/ecommerce-platform/commit/3be5f78f81d461031f398e2ff7b0d10f70887e9a) | Completo | OE1 |
+| 17/09/2026 | Configuración del motor y sesiones asíncronas, DATABASE_URL y compatibilidad de psycopg con Windows | Backend e infraestructura | Jesús Iván Sosa Báez | [3be5f78](https://github.com/ivansosabz/ecommerce-platform/commit/3be5f78f81d461031f398e2ff7b0d10f70887e9a) | Completo | OE7 |
+| 17/09/2026 | Incorporación y ejecución de 12 pruebas de salud, correspondencia con el DBML e integridad PostgreSQL; revisión de código con Ruff | Calidad | Jesús Iván Sosa Báez | [3be5f78](https://github.com/ivansosabz/ecommerce-platform/commit/3be5f78f81d461031f398e2ff7b0d10f70887e9a) | Completo | OE6 |
+| Planificada: catálogo y búsqueda | Implementar endpoints versionados y consultas para categorías, marcas, productos, filtros y paginación | Backend | Jesús Iván Sosa Báez | Sin commit: actividad pendiente | Pendiente | OE1 |
+| Planificada: interfaz | Desarrollar y verificar vistas de catálogo, autenticación, carrito, checkout y pedidos en móvil y escritorio | Frontend | Jesús Iván Sosa Báez | Sin commit: actividad pendiente | Pendiente | OE2 |
+| Planificada: autenticación | Implementar y probar registro, acceso con contraseña y acceso con Google OIDC | Backend y seguridad | Jesús Iván Sosa Báez | Sin commit: actividad pendiente | Pendiente | OE4, OE6 |
+| Planificada: autorización | Implementar y probar permisos de usuario y administrador para catálogo y pedidos | Backend y seguridad | Jesús Iván Sosa Báez | Sin commit: actividad pendiente | Pendiente | OE5, OE6 |
+| Planificada: funciones de usuario y ventas | Implementar favoritos, carrito persistente, checkout simulado y pedidos, con pruebas de éxito y error | Backend y calidad | Jesús Iván Sosa Báez | Sin commit: actividad pendiente | Pendiente | OE1, OE6 |
+| Planificada: despliegue | Preparar Docker, CI y un despliegue demostrable del MVP | Infraestructura | Jesús Iván Sosa Báez | Sin commit: actividad pendiente | Pendiente | OE7 |
+| Pendiente de enlaces | Actualizar el documento oficial en Google Drive y comentar en la entrega de Classroom después de verificar la actualización | Documentación y entrega académica | Jesús Iván Sosa Báez | Sin commit: actividad pendiente | Pendiente | OE8 |
+
+Las actividades futuras son compromisos planificados; no se presentan como avances realizados. Los trabajos de la semana del 14 al 20 de septiembre corresponden a las filas del 15 y 17/09/2026. Las filas del 10/09 se conservan como historial.
 
 Estados permitidos: Pendiente, En curso, Completo y Bloqueado.
 

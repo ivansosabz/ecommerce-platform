@@ -16,9 +16,7 @@
 
 ## Commits
 
-El único commit observado es `primer commit`. Todavía no existe una convención demostrable en el historial.
-
-[PENDIENTE: acordar y documentar la convención de commits y ramas.]
+El historial utiliza prefijos `feat`, `docs` y `chore`. Los nuevos cambios siguen Conventional Commits y se agrupan por responsabilidad. El trabajo actual continúa en `codex/refine-database-model`; las ramas nuevas creadas con Codex usan el prefijo `codex/`.
 
 ## Patrones prohibidos
 

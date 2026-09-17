@@ -10,13 +10,13 @@ El proyecto `frontend` usa React, TypeScript y Vite. La configuración activa el
 
 El proyecto `backend` declara `fastapi[standard]` y crea una aplicación mínima en `app/main.py`.
 
-[PENDIENTE: registrar el motivo de elegir FastAPI y la versión de Python soportada.]
+[PENDIENTE: registrar el motivo de elegir FastAPI.]
 
 ## Dependencias separadas
 
 El backend separa dependencias de ejecución y desarrollo. `pytest` y `httpx` solo aparecen en `requirements-dev.txt`.
 
-[PENDIENTE: decidir una estrategia de versionado o bloqueo de dependencias.]
+Las dependencias nuevas declaran rangos de versiones; el bloqueo completo de dependencias permanece pendiente.
 
 ## Prueba de disponibilidad
 
@@ -42,6 +42,16 @@ Decisiones aprobadas:
 - IVA registrado por detalle y resumido en la cabecera de la factura.
 - Aplicación pragmática de tercera forma normal: los catálogos se separan, mientras que los datos históricos de pedidos y facturas permanecen como copias deliberadas.
 - Eliminación lógica para usuarios, categorías, marcas y productos.
-- Futura implementación con SQLAlchemy asíncrono, psycopg 3 y Alembic.
+- Implementación con SQLAlchemy asíncrono, psycopg 3 y Alembic.
 
-La simulación no se conecta con SIFEN, no firma documentos y no produce comprobantes con validez tributaria. La ORM y las migraciones permanecen pendientes hasta que el diagrama sea aprobado en dbdiagram.io.
+La simulación no se conecta con SIFEN, no firma documentos y no produce comprobantes con validez tributaria. El diagrama fue aprobado el 17/09/2026. Se implementaron las 15 tablas del MVP; `facturas` y `detalles_factura` permanecen como diseño futuro por decisión del responsable.
+
+## Arquitectura por capas, 17/09/2026
+
+Se adopta el flujo rutas HTTP -> servicios -> repositorios -> SQLAlchemy -> PostgreSQL. Las reglas de negocio y las transacciones pertenecen a servicios; los repositorios reciben una sesión y no realizan commits. Los contratos Pydantic se mantienen separados de las entidades ORM. Los casos de uso se agregarán de forma incremental.
+
+## Configuración y compatibilidad
+
+Se utiliza `DATABASE_URL` mediante pydantic-settings y se incluye `.env.example` sin credenciales reales. Python mínimo: 3.12, por el uso de `asyncio.run(..., loop_factory=...)`. Las migraciones y el comando documentado de Uvicorn usan `SelectorEventLoop`, compatible con psycopg asíncrono en Windows.
+
+Las nuevas dependencias declaran rangos compatibles. No existe todavía un archivo de bloqueo reproducible para todo el backend. Alembic es la única herramienta que modifica el esquema; iniciar la API no crea tablas automáticamente.
