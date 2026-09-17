@@ -13,7 +13,7 @@ Este documento reúne la documentación viva del proyecto. Se actualizará de fo
 - **Repositorio:** `ecommerce-platform`.
 - **URL:** <https://github.com/ivansosabz/ecommerce-platform>.
 - **Áreas involucradas:** desarrollo web frontend y backend, diseño de APIs REST, modelado de bases de datos, autenticación, autorización, infraestructura, testing, control de versiones y documentación técnica.
-- **Docentes colaboradores:** [PENDIENTE: registrar docentes colaboradores].
+- **Docentes colaboradores:**
 
 ### Integrantes y roles
 
