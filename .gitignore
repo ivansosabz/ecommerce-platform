@@ -63,3 +63,5 @@ Desktop.ini
 tmp/
 temp/
 
+# Local documentation sources
+docs/contexto/*.pdf
